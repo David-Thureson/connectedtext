@@ -16,7 +16,7 @@ use std::collections::BTreeMap;
 //extern crate util;
 
 const FILE_FULL_EXPORT: &str = r"E:\ConnectedText Restructure 2020-10-17\Home Export One File\Wiki Export.TXT";
-const FILE_IMPORT_TOOLS: &str = r"E:\Private Wiki Export\Tools.txt";
+const FILE_IMPORT_TOOLS: &str = r"Tools.txt";
 const FILE_IMPORT_HOME: &str = r"E:\Private Wiki Export\Home.txt";
 const PATH_HOME_ARCHIVE_PROJECT_SOURCE: &str = r"E:\ConnectedText Restructure\Home Archive Project";
 const PATH_HOME_ARCHIVE_PROJECT_DEST: &str = r"E:\ConnectedText Restructure\Home Archive Project Dest";
@@ -31,11 +31,12 @@ fn main() {
 
     // gen::gen_page_from_chrome_bookmarks(path::Path::new(PATH_CHROME_BOOKMARKS));
     // audible::main();
-    try_load_topics();
+    // try_load_topics();
+    dbg!(count_topics_in_tools());
     // catalog_attributes();
     // catalog_categories();
 
-    dbg!(&util::log::get_sorted());
+    //bg!(&util::log::get_sorted());
 
     println!("\nConnectedText done\n");
 }
@@ -59,6 +60,10 @@ fn run_import() {
     // dbg!(&import::get_image_file_names(path::Path::new(PATH_TOOLS_PROJECT_DEST)));
     // import::copy_image_files(path::Path::new(PATH_TOOLS_PROJECT_SOURCE), path::Path::new(PATH_TOOLS_PROJECT_DEST)).ok();
 
+}
+
+fn count_topics_in_tools() -> usize {
+    import::import_topics(FILE_IMPORT_TOOLS, "Tools").topics.len()
 }
 
 fn import_topics() -> crate::model::Wiki {
