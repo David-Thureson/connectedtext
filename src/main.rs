@@ -7,8 +7,9 @@
 use std::path;
 
 use connectedtext::*;
-use util::html;
-use util::format;
+// use util::html;
+// use util::format;
+use util_rust::group::Grouper;
 use std::fmt::Write;
 use std::collections::BTreeMap;
 
@@ -17,7 +18,7 @@ use std::collections::BTreeMap;
 
 const FILE_FULL_EXPORT: &str = r"E:\ConnectedText Restructure 2020-10-17\Home Export One File\Wiki Export.TXT";
 const FILE_IMPORT_TOOLS: &str = r"Tools.txt";
-const FILE_IMPORT_HOME: &str = r"E:\Private Wiki Export\Home.txt";
+const FILE_IMPORT_HOME: &str = r"Home.txt";
 const PATH_HOME_ARCHIVE_PROJECT_SOURCE: &str = r"E:\ConnectedText Restructure\Home Archive Project";
 const PATH_HOME_ARCHIVE_PROJECT_DEST: &str = r"E:\ConnectedText Restructure\Home Archive Project Dest";
 const PATH_TOOLS_PROJECT_SOURCE: &str = r"E:\ConnectedText Restructure\Tools Project";
@@ -27,16 +28,18 @@ const PATH_CHROME_BOOKMARKS: &str = r"E:\Temp\bookmarks_1_29_20.html";
 fn main() {
     println!("\nConnectedText start\n");
 
-    util::log::clear();
+    log::clear();
 
     // gen::gen_page_from_chrome_bookmarks(path::Path::new(PATH_CHROME_BOOKMARKS));
     // audible::main();
     // try_load_topics();
-    dbg!(count_topics_in_tools());
+    // try_load_links();
+    // dbg!(count_topics_in_tools());
     // catalog_attributes();
     // catalog_categories();
 
     //bg!(&util::log::get_sorted());
+    //import::test_delimited_entries();
 
     println!("\nConnectedText done\n");
 }
@@ -76,6 +79,13 @@ fn try_load_topics() {
     let topics = import_topics();
     dbg!(&topics);
 }
+
+/*
+fn try_load_links() {
+    let mut wiki = import_topics();
+    import::add_links(&mut wiki);
+}
+*/
 
 fn catalog_attributes() {
     let wiki = import_topics();
@@ -120,7 +130,7 @@ impl AttributeForCatalog {
 
 fn catalog_categories() {
     let wiki = import_topics();
-    let mut g = util::group::Grouper::new("Categories");
+    let mut g = Grouper::new("Categories");
     for topic in wiki.topics.iter() {
         if let Some(category) = &topic.category {
             g.record_entry(category);

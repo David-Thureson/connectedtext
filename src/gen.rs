@@ -1,5 +1,5 @@
 use std::path;
-use util::html;
+use util_rust::html;
 use crate::*;
 use chrono::NaiveDate;
 use itertools::Itertools;

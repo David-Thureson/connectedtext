@@ -1,10 +1,13 @@
 use std::collections::BTreeMap;
 use chrono::NaiveDate;
 use crate::CT_DUMMY_VALUE;
+use util_rust::group::Grouper;
+use util_rust::{log, parse};
 
 #[derive(Debug)]
 pub struct Wiki {
     pub topics: Vec<Topic>,
+    pub links: Vec<Link>,
     pub attribute_types: BTreeMap<String, AttributeType>,
 }
 
@@ -14,11 +17,11 @@ pub struct AttributeType {
     type_: String,
     is_multiple: bool,
     count: usize,
-    per_topic_counts: util::group::Grouper<usize>,
-    date_values: util::group::Grouper<NaiveDate>,
-    string_values: util::group::Grouper<String>,
-    bool_values: util::group::Grouper<bool>,
-    int_values: util::group::Grouper<i64>,
+    per_topic_counts: Grouper<usize>,
+    date_values: Grouper<NaiveDate>,
+    string_values: Grouper<String>,
+    bool_values: Grouper<bool>,
+    int_values: Grouper<i64>,
 }
 
 #[derive(Clone, Debug)]
@@ -44,10 +47,18 @@ pub struct Topic {
     pub repeat_score: Option<u32>,
 }
 
+#[derive(Clone, Debug)]
+pub struct Link {
+    pub from_topic: String,
+    pub to_topic: String,
+    pub to_section: Option<String>,
+}
+
 impl Wiki {
     pub fn new() -> Self {
         Self {
             topics: vec![],
+            links: vec![],
             attribute_types: BTreeMap::new(),
         }
     }
@@ -97,14 +108,14 @@ impl Topic {
     }
 
     fn log(&self, message: &str) {
-        util::log::log(&format!("{}: {}: {}", self.project_name, self.name, message));
+        log::log(&format!("{}: {}: {}", self.project_name, self.name, message));
     }
 
     fn parse_category(&mut self) {
         let category_lines = self.content.split("\n").filter(|x| x.trim().starts_with("[[$CATEGORY:")).collect::<Vec<_>>();
         self.category = match category_lines.len() {
             0 => None,
-            1 => Some(util::parse::between(category_lines[0], "[[$CATEGORY:", "]]").trim().to_string()),
+            1 => Some(parse::between(category_lines[0], "[[$CATEGORY:", "]]").trim().to_string()),
             _ => {
                 self.log("Multiple $CATEGORY lines.");
                 None
@@ -121,13 +132,13 @@ impl Topic {
                     self.log("Attribute line is missing pipes at start or end.");
                     continue;
                 }
-                let line = util::parse::between(line, "||", "||");
-                let (attribute_name, values_part) = util::parse::split_2(line, "||");
+                let line = parse::between(line, "||", "||");
+                let (attribute_name, values_part) = parse::split_2(line, "||");
                 if self.attributes.contains_key(attribute_name) {
                     self.log(&format!("Attribute {:?} appears more than once.", attribute_name));
                     continue;
                 }
-                let values_part = util::parse::between(values_part, "[[", "]]");
+                let values_part = parse::between(values_part, "[[", "]]");
                 let values_part = values_part.replace("]], [[", "]],[[");
                 let mut values = vec![];
                 for value_split in values_part.split("]],[[") {
@@ -140,7 +151,7 @@ impl Topic {
                         self.log(&format!("Value split {:?}; does not contain \":=\".", value_split));
                         continue;
                     }
-                    let (value_attribute_name, value_attribute_value) = util::parse::split_2(value_split, ":=");
+                    let (value_attribute_name, value_attribute_value) = parse::split_2(value_split, ":=");
                     if value_attribute_name != attribute_name {
                         self.log(&format!("Attribute name = {:?} but value says {:?}.", attribute_name, value_attribute_name));
                         continue;
@@ -345,11 +356,11 @@ impl AttributeType {
             type_: type_.to_string(),
             is_multiple,
             count: 0,
-            per_topic_counts: util::group::Grouper::new("per_topic_counts"),
-            date_values: util::group::Grouper::new("date_values"),
-            string_values: util::group::Grouper::new("date_values"),
-            bool_values: util::group::Grouper::new("bool_values"),
-            int_values: util::group::Grouper::new("int_values"),
+            per_topic_counts: Grouper::new("per_topic_counts"),
+            date_values: Grouper::new("date_values"),
+            string_values: Grouper::new("date_values"),
+            bool_values: Grouper::new("bool_values"),
+            int_values: Grouper::new("int_values"),
         }
     }
 }

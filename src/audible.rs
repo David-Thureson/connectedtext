@@ -7,6 +7,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::collections::BTreeMap;
 use crate::gen;
+use util_rust::parse;
 
 const FILE_IMPORT_BOOKS_PERSONAL: &str = r"E:\ConnectedText Restructure 2020-10-17\Audible Books Personal.txt";
 const FILE_IMPORT_PURCHASE_DATES_PERSONAL: &str = r"E:\ConnectedText Restructure 2020-10-17\Audible Books Purchase History Personal.txt";
@@ -64,7 +65,7 @@ pub fn import_audible_books(file_import_books: &str, file_import_purchase_dates:
                 v.push(book.clone());
             }
             book = make_empty_audible_book(account_name);
-            book.short_title = util::parse::before(&line, "By  cover art").trim().to_string();
+            book.short_title = parse::before(&line, "By  cover art").trim().to_string();
             title_line = true;
             continue;
         }
@@ -74,20 +75,20 @@ pub fn import_audible_books(file_import_books: &str, file_import_purchase_dates:
             continue;
         }
         if line.starts_with("By:") {
-            let authors = util::parse::after(&line, "By: ").trim().to_string();
+            let authors = parse::after(&line, "By: ").trim().to_string();
             let authors = authors.split(",").map(|x| x.trim().to_string()).collect::<Vec<String>>();
             //rintln!("{:?}", &authors);
             book.authors = authors;
             continue;
         }
         if line.starts_with("Narrated by:") {
-            let narrators = util::parse::after(&line, "Narrated by: ").trim().to_string();
+            let narrators = parse::after(&line, "Narrated by: ").trim().to_string();
             let narrators = narrators.split(",").map(|x| x.trim().to_string()).collect::<Vec<String>>();
             book.narrators = narrators;
             continue;
         }
         if line.starts_with("Series:") {
-            let series = util::parse::after(&line, "Series: ").trim().to_string();
+            let series = parse::after(&line, "Series: ").trim().to_string();
             book.series = Some(series);
             continue;
         }
@@ -129,7 +130,7 @@ pub fn import_audible_purchase_dates(file_import: &str) -> BTreeMap<String, Naiv
                 //bg!(&date);
             }
             // The title is one line before the "By: " line.
-            let title = util::parse::after(&lines[line_index - 1], "By: ").trim().to_string();
+            let title = parse::after(&lines[line_index - 1], "By: ").trim().to_string();
             purchase_dates.insert(title, date.clone());
         }
     }

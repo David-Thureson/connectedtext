@@ -1,9 +1,8 @@
 use std::{fs, io, path};
-
 use std::collections::{HashMap, HashSet};
-
 use crate::*;
-use crate::model;
+use crate::model::{Topic, Wiki};
+use util_rust::parse;
 
 pub fn fix_file_names(path_full_export_file: &path::Path, path_source: &path::Path, path_dest: &path::Path) -> io::Result<()> {
     assert!(path_source.is_absolute());
@@ -13,7 +12,7 @@ pub fn fix_file_names(path_full_export_file: &path::Path, path_source: &path::Pa
     assert_ne!(path_source, path_dest);
 
     let files_and_topics = reconcile_files_and_topics(path_full_export_file, path_source);
-    for path_file_source in util::parse::get_files_ci(path_source, "*.txt").unwrap() {
+    for path_file_source in parse::get_files_ci(path_source, "*.txt").unwrap() {
         assert!(path_file_source.is_file());
         dbg!(&path_file_source);
         let topic_name = files_and_topics.get(&path_file_source).unwrap();
@@ -94,9 +93,9 @@ pub fn get_image_path(path: &path::Path) -> path::PathBuf {
 
 pub fn get_image_file_names(path: &path::Path) -> io::Result<HashSet<String>> {
     assert!(path.is_dir());
-    Ok(util::parse::find_in_files_ci(path, "*.txt","[[$IMG:Images\\", "]]")?.iter()
+    Ok(parse::find_in_files_ci(path, "*.txt","[[$IMG:Images\\", "]]")?.iter()
         // If there's a pipe character, take only the part before it.
-        .map(|x| util::parse::before(&x, "|").to_string())
+        .map(|x| parse::before(&x, "|").to_string())
         .collect())
 }
 
@@ -137,7 +136,7 @@ pub fn copy_image_files(path_source: &path::Path, path_dest: &path::Path) -> io:
 pub fn get_all_topic_names(path_full_export_file: &path::Path) -> io::Result<Vec<String>> {
     assert!(path_full_export_file.is_absolute());
     assert!(path_full_export_file.is_file());
-    util::parse::find_in_file(path_full_export_file, "****************** ", "\r\n")
+    parse::find_in_file(path_full_export_file, "****************** ", "\r\n")
 }
 
 pub fn reconcile_files_and_topics(path_full_export_file: &path::Path, path_source: &path::Path) -> HashMap<path::PathBuf, String> {
@@ -153,7 +152,7 @@ pub fn reconcile_files_and_topics(path_full_export_file: &path::Path, path_sourc
         .collect();
     dbg!(&topics);
     let mut map = HashMap::new();
-    for (path_file, file_name_from_file) in util::parse::get_files_ci(&path_source, "*.txt")
+    for (path_file, file_name_from_file) in parse::get_files_ci(&path_source, "*.txt")
         .unwrap()
         .iter()
         .map(|path_file| (path_file, path_file.file_name().unwrap().to_str().unwrap().to_lowercase())) {
@@ -170,14 +169,66 @@ pub fn reconcile_files_and_topics(path_full_export_file: &path::Path, path_sourc
     map
 }
 
-pub fn import_topics(file_import: &str, project_name: &str) -> crate::model::Wiki {
-    let map = util::parse::read_file_into_sections(file_import, DELIMITER_TOPIC);
+pub fn import_topics(file_import: &str, project_name: &str) -> Wiki {
+    let map = parse::read_file_into_sections(file_import, DELIMITER_TOPIC);
     //bg!(map.keys().map(|x| format!("|{}|", x)).collect::<Vec<_>>());
-    let mut wiki = crate::model::Wiki::new();
+    let mut wiki = Wiki::new();
     for (name, content) in map.iter() {
-        let topic = model::Topic::new(project_name, name, content);
+        let topic = Topic::new(project_name, name, content);
         wiki.topics.push(topic);
     }
     wiki
 }
 
+/*
+pub fn add_links(wiki: &mut Wiki) {
+    wiki.links.clear();
+    for topic in wiki.topics.iter().take(5) {
+        dbg!(topic.name);
+        for bracketed_entry in parse::delimited_entries(&topic.text, "[[", "]]").iter() {
+            dbg!(&bracketed_entry);
+        }
+    }
+}
+*/
+
+/*
+fn delimited_entries(text: &str, left_delimiter: &str, right_delimiter: &str) -> Vec<String> {
+    let mut v = vec![];
+    for s in text.split(left_delimiter).skip(1) {
+        dbg!(s);
+        let one_value = s.split(right_delimiter).nth(0).unwrap().to_string();
+        dbg!(&one_value);
+        v.push(one_value);
+    }
+    v
+}
+
+fn delimited_entries(text: &str, _left_delimiter: &str, _right_delimiter: &str) -> Vec<String> {
+    // let regex= Regex::new(r"[[.+]]").unwrap();
+    let regex= Regex::new(r"\[\[.+\]\]").unwrap();
+    let mut v = vec![];
+    let mut remaining_text = text.to_string();
+    while true {
+        match regex.shortest_match(&remaining_text) {
+            Some(pos) => {
+                let (match_text, remaining_text_str) = text.split_at(pos);
+                dbg!(match_text, remaining_text_str);
+                remaining_text = remaining_text_str.to_string();
+            },
+            None => {
+                break;
+            },
+        }
+    }
+    // for mtch in regex.find_iter(text) {
+    //     dbg!(&mtch);
+    //}
+    v
+}
+
+pub fn test_delimited_entries() {
+    delimited_entries("abc [[def]] ghi[[j]]k", "[[", "]]");
+    delimited_entries("[[xyy]][[z]] [[   q ]]", "[[", "]]");
+}
+*/
