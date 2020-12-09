@@ -1,7 +1,7 @@
 use std::{fs, io, path};
 use std::collections::{HashMap, HashSet};
 use crate::*;
-use crate::model::{Topic, Wiki};
+use crate::model::{Link, LinkType, Topic, Wiki};
 use util_rust::parse;
 
 pub fn fix_file_names(path_full_export_file: &path::Path, path_source: &path::Path, path_dest: &path::Path) -> io::Result<()> {
@@ -180,17 +180,25 @@ pub fn import_topics(file_import: &str, project_name: &str) -> Wiki {
     wiki
 }
 
-/*
 pub fn add_links(wiki: &mut Wiki) {
-    wiki.links.clear();
-    for topic in wiki.topics.iter().take(5) {
-        dbg!(topic.name);
-        for bracketed_entry in parse::delimited_entries(&topic.text, "[[", "]]").iter() {
-            dbg!(&bracketed_entry);
+    for topic in wiki.topics.iter_mut() {
+        //bg!(&topic.name);
+        for entry in parse::delimited_entries(&topic.content, "[[", "]]").iter() {
+            if !entry.starts_with("$") && !entry.contains(":=") {
+                let (link, label) = parse::split_once_with_option(entry,"|");
+                let (topic_name, section_name) = parse::split_once_with_option(&link, "#");
+                topic.links.push(Link::Internal {
+                    topic_name,
+                    section_name,
+                    label,
+                    type_: LinkType::Normal
+                })
+            }
         }
+        //bg!(&topic.links);
     }
+    wiki.report_link_groups();
 }
-*/
 
 /*
 fn delimited_entries(text: &str, left_delimiter: &str, right_delimiter: &str) -> Vec<String> {

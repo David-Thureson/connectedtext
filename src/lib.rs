@@ -1,4 +1,5 @@
 #![feature(drain_filter)]
+#![feature(str_split_once)]
 
 // extern crate util;
 

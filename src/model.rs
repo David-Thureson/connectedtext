@@ -7,7 +7,6 @@ use util_rust::{log, parse};
 #[derive(Debug)]
 pub struct Wiki {
     pub topics: Vec<Topic>,
-    pub links: Vec<Link>,
     pub attribute_types: BTreeMap<String, AttributeType>,
 }
 
@@ -45,20 +44,36 @@ pub struct Topic {
     pub completed_date: Option<NaiveDate>,
     pub abandoned_date: Option<NaiveDate>,
     pub repeat_score: Option<u32>,
+    pub links: Vec<Link>,
 }
 
 #[derive(Clone, Debug)]
-pub struct Link {
-    pub from_topic: String,
-    pub to_topic: String,
-    pub to_section: Option<String>,
+pub enum Link {
+    Internal {
+        topic_name: String,
+        section_name: Option<String>,
+        label: Option<String>,
+        type_: LinkType,
+    },
+    Url {
+        url: String,
+        label: Option<String>,
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum LinkType {
+    Normal,
+    Parent,
+    GrandParent,
+    Subtopic,
+    SeeAlso,
 }
 
 impl Wiki {
     pub fn new() -> Self {
         Self {
             topics: vec![],
-            links: vec![],
             attribute_types: BTreeMap::new(),
         }
     }
@@ -78,6 +93,31 @@ impl Wiki {
         self.attribute_types = attribute_types;
     }
 
+    pub fn report_link_groups(&self) {
+        let mut link_groups = Grouper::new("Links");
+        for topic in self.topics.iter() {
+            for link in topic.links.iter() {
+                let key = match link {
+                    Link::Internal { topic_name: _, section_name, label, type_: _ } => {
+                        match (section_name, label) {
+                            (None, None) => "Internal",
+                            (None, Some(_)) => "Internal w/ label",
+                            (Some(_), None) => "Internal w/ section",
+                            (Some(_), Some(_)) => "Internal w/ section and label",
+                        }
+                    },
+                    Link::Url { url: _, label} => {
+                        match label {
+                            None => "Url",
+                            Some(_) => "Url w/label",
+                        }
+                    },
+                };
+                link_groups.record_entry(&key);
+            }
+        }
+        link_groups.print_by_count(0, None);
+    }
 }
 
 impl Topic {
@@ -102,6 +142,7 @@ impl Topic {
             completed_date: None,
             abandoned_date: None,
             repeat_score: None,
+            links: vec![],
         };
         topic.parse_category();
         topic

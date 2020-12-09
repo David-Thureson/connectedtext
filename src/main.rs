@@ -33,7 +33,7 @@ fn main() {
     // gen::gen_page_from_chrome_bookmarks(path::Path::new(PATH_CHROME_BOOKMARKS));
     // audible::main();
     // try_load_topics();
-    // try_load_links();
+    try_load_links();
     // dbg!(count_topics_in_tools());
     // catalog_attributes();
     // catalog_categories();
@@ -80,12 +80,10 @@ fn try_load_topics() {
     dbg!(&topics);
 }
 
-/*
 fn try_load_links() {
     let mut wiki = import_topics();
     import::add_links(&mut wiki);
 }
-*/
 
 fn catalog_attributes() {
     let wiki = import_topics();
