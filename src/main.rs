@@ -6,12 +6,14 @@
 
 use std::path;
 
-use connectedtext::*;
 // use util::html;
 // use util::format;
 use util_rust::group::Grouper;
 use std::fmt::Write;
 use std::collections::BTreeMap;
+
+use connectedtext::*;
+use simple::*;
 
 //#[macro_use]
 //extern crate util;

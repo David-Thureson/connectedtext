@@ -1,7 +1,7 @@
 use std::{fs, io, path};
 use std::collections::{HashMap, HashSet};
 use crate::*;
-use crate::model::{Link, LinkType, Topic, Wiki};
+use super::model::{Link, LinkType, Topic, Wiki};
 use util_rust::parse;
 
 pub fn fix_file_names(path_full_export_file: &path::Path, path_source: &path::Path, path_dest: &path::Path) -> io::Result<()> {
@@ -181,6 +181,33 @@ pub fn import_topics(file_import: &str, project_name: &str) -> Wiki {
 }
 
 pub fn add_links(wiki: &mut Wiki) {
+    for topic in wiki.topics.values_mut() {
+        //bg!(&topic.name);
+        for entry in parse::delimited_entries(&topic.content, "[[", "]]").iter() {
+            if !entry.starts_with("$") && !entry.contains(":=") {
+                let (link, label) = parse::split_once_with_option(entry,"|");
+                let (topic_name, section_name) = parse::split_once_with_option(&link, "#");
+                topic.links.push(Link::Internal {
+                    topic_name,
+                    section_name,
+                    label,
+                    type_: LinkType::Normal
+                })
+            }
+        }
+        //bg!(&topic.links);
+    }
+    wiki.report_link_groups();
+}
+
+pub fn add_tags(wiki: &mut Wiki) {
+    // For our purposes tags are anything that appears inside double square brackets such as:
+    //   Connectedtext tag: [[$CATEGORY:Books]]
+    //   Image: [[$IMG:project week 3.png|100%|NONE]]
+    //   Internal link: [[Git Commands]]
+    //   URL: [[$URL:https://www.audible.com]]
+    // Attributes also appear in double square brackets but are loaded somewhere else:
+    //   Attribute: [[Subject:=History]]
     for topic in wiki.topics.values_mut() {
         //bg!(&topic.name);
         for entry in parse::delimited_entries(&topic.content, "[[", "]]").iter() {
