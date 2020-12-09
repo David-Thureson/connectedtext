@@ -33,10 +33,13 @@ fn main() {
     // gen::gen_page_from_chrome_bookmarks(path::Path::new(PATH_CHROME_BOOKMARKS));
     // audible::main();
     // try_load_topics();
-    try_load_links();
+    // try_load_links();
     // dbg!(count_topics_in_tools());
     // catalog_attributes();
     // catalog_categories();
+    // import_topics().report_added_dates();
+    import_topics().report_derived_added_dates();
+
 
     //bg!(&util::log::get_sorted());
     //import::test_delimited_entries();
@@ -72,6 +75,7 @@ fn count_topics_in_tools() -> usize {
 fn import_topics() -> crate::model::Wiki {
     let mut wiki = import::import_topics(FILE_IMPORT_TOOLS, "Tools");
     wiki.append(import::import_topics(FILE_IMPORT_HOME, "Home"));
+    import::add_links(&mut wiki);
     wiki
 }
 
@@ -88,7 +92,7 @@ fn try_load_links() {
 fn catalog_attributes() {
     let wiki = import_topics();
     let mut attributes: BTreeMap<String, AttributeForCatalog> = BTreeMap::new();
-    for topic in wiki.topics.iter() {
+    for topic in wiki.topics.values() {
     // for topic in topics.iter().filter(|x| x.category.eq(&Some(CATEGORY_BOOKS.to_string()))) {
         for (attr_name, attr_values) in topic.attributes.iter() {
             let mut attribute = attributes.entry(attr_name.to_string()).or_insert_with(|| { AttributeForCatalog::new(attr_name) } );
@@ -129,7 +133,7 @@ impl AttributeForCatalog {
 fn catalog_categories() {
     let wiki = import_topics();
     let mut g = Grouper::new("Categories");
-    for topic in wiki.topics.iter() {
+    for topic in wiki.topics.values() {
         if let Some(category) = &topic.category {
             g.record_entry(category);
         }

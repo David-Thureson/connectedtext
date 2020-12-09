@@ -175,13 +175,13 @@ pub fn import_topics(file_import: &str, project_name: &str) -> Wiki {
     let mut wiki = Wiki::new();
     for (name, content) in map.iter() {
         let topic = Topic::new(project_name, name, content);
-        wiki.topics.push(topic);
+        wiki.add_topic(topic);
     }
     wiki
 }
 
 pub fn add_links(wiki: &mut Wiki) {
-    for topic in wiki.topics.iter_mut() {
+    for topic in wiki.topics.values_mut() {
         //bg!(&topic.name);
         for entry in parse::delimited_entries(&topic.content, "[[", "]]").iter() {
             if !entry.starts_with("$") && !entry.contains(":=") {

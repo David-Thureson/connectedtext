@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Datelike};
 use crate::CT_DUMMY_VALUE;
 use util_rust::group::Grouper;
 use util_rust::{log, parse};
 
 #[derive(Debug)]
 pub struct Wiki {
-    pub topics: Vec<Topic>,
+    pub topics: BTreeMap<String, Topic>,
     pub attribute_types: BTreeMap<String, AttributeType>,
 }
 
@@ -73,7 +73,7 @@ pub enum LinkType {
 impl Wiki {
     pub fn new() -> Self {
         Self {
-            topics: vec![],
+            topics: BTreeMap::new(),
             attribute_types: BTreeMap::new(),
         }
     }
@@ -83,19 +83,34 @@ impl Wiki {
         self.resolve_attributes();
     }
 
+    pub fn add_topic(&mut self, topic: Topic) {
+        let key = format!("{:<20}{}", topic.project_name.to_lowercase(), topic.name.to_lowercase());
+        //bg!(&key);
+        self.topics.insert(key, topic);
+    }
+
     pub fn resolve_attributes(&mut self) {
         // self.attribute_types.clear();
         let mut attribute_types = BTreeMap::new();
-        for topic in self.topics.iter_mut() {
+        for topic in self.topics.values_mut() {
             topic.parse_attributes();
             topic.set_attributes(&mut attribute_types);
         }
         self.attribute_types = attribute_types;
     }
 
+    /*
+    // pub fn link_iter(&self) -> FlatMap<Iter<Topic>, Iter<Link>, fn(&Topic) -> Iter<Link> {
+    pub fn link_iter(&self) {
+        let a = self.topics.iter().flat_map(|topic| topic.links.iter()).into_iter();
+        dbg!(&a.);
+    }
+
+     */
+
     pub fn report_link_groups(&self) {
         let mut link_groups = Grouper::new("Links");
-        for topic in self.topics.iter() {
+        for topic in self.topics.values() {
             for link in topic.links.iter() {
                 let key = match link {
                     Link::Internal { topic_name: _, section_name, label, type_: _ } => {
@@ -117,6 +132,62 @@ impl Wiki {
             }
         }
         link_groups.print_by_count(0, None);
+    }
+
+    pub fn report_added_dates(&self) {
+        self.report_dates(|topic: &Topic| topic.added_date)
+    }
+
+    pub fn report_dates<F>(&self, f: F)
+        where F: Fn(&Topic) -> Option<NaiveDate>
+    {
+        let mut groups = Grouper::new("Dates");
+        for topic in self.topics.values() {
+            let key = match f(topic) {
+                Some(date) => {
+                    let year = date.year();
+                    year.to_string()
+                },
+                None => "None".to_string(),
+            };
+            groups.record_entry(&key);
+        }
+        groups.list_by_key();
+    }
+
+    pub fn report_derived_added_dates(&self) {
+        let mut earliest_inbound_links: BTreeMap<String, (String, NaiveDate)> = BTreeMap::new();
+        for topic in self.topics.values() {
+            if let Some(added_date) = topic.added_date {
+                for link in topic.links.iter() {
+                    match link {
+                        Link::Internal{ topic_name: ref_topic_name, .. } => {
+                            match earliest_inbound_links.get(ref_topic_name) {
+                                Some((_, found_date)) => {
+                                    if added_date < *found_date {
+                                        //rintln!("Replacing {} with {}.", found_date, added_date);
+                                        earliest_inbound_links.insert(ref_topic_name.to_string(), (topic.name.clone(), added_date));
+                                    }
+                                },
+                                None => {
+                                    earliest_inbound_links.insert(ref_topic_name.to_string(), (topic.name.clone(), added_date));
+                                }
+                            }
+                        },
+                        _ => {},
+                    };
+                }
+            }
+        }
+        //bg!(&earliest_inbound_links);
+        let mut no_date = vec![];
+        for topic in self.topics.values().filter(|topic| topic.added_date.is_none()) {
+            match earliest_inbound_links.get(&topic.name) {
+                Some((other_topic_name, added_date)) => println!("{}: {}: from {}", added_date, topic.name, other_topic_name),
+                None => no_date.push(&topic.name),
+            }
+        }
+        //bg!(&no_date);
     }
 }
 
